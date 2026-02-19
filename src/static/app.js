@@ -25,16 +25,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // Use innerHTML for app-controlled header content
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <h5>Participants (${details.participants.length}):</h5>
-          <ul class="participants-list">
-            ${details.participants.length > 0 ? details.participants.map(email => `<li><span>${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}" title="Remove participant">×</button></li>`).join('') : '<li class="no-participants">No participants yet</li>'}
-          </ul>
         `;
+
+        // Build participants list using DOM APIs to prevent XSS
+        const participantsList = document.createElement("ul");
+        participantsList.className = "participants-list";
+
+        if (details.participants.length > 0) {
+          details.participants.forEach(email => {
+            const li = document.createElement("li");
+
+            const emailSpan = document.createElement("span");
+            emailSpan.textContent = email;
+            li.appendChild(emailSpan);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "delete-btn";
+            deleteBtn.setAttribute("data-activity", name);
+            deleteBtn.setAttribute("data-email", email);
+            deleteBtn.setAttribute("title", "Remove participant");
+            deleteBtn.textContent = "×";
+            li.appendChild(deleteBtn);
+
+            participantsList.appendChild(li);
+          });
+        } else {
+          const li = document.createElement("li");
+          li.className = "no-participants";
+          li.textContent = "No participants yet";
+          participantsList.appendChild(li);
+        }
+
+        activityCard.appendChild(participantsList);
 
         // Add event listeners for delete buttons
         activityCard.querySelectorAll('.delete-btn').forEach(btn => {
