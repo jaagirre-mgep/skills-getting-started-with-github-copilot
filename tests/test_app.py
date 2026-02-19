@@ -103,6 +103,38 @@ class TestSignup:
         assert "detail" in data
         assert "Activity not found" in data["detail"]
 
+    def test_signup_activity_full(self, client, reset_activities):
+        """Test that signup is rejected when activity is at capacity"""
+        # Get an activity with small max_participants
+        activities_response = client.get("/activities")
+        activities_data = activities_response.json()
+
+        # Find an activity that's currently at or near capacity
+        # Tennis Club has max 10 and 2 participants
+        full_activity = "Tennis Club"
+        activity = activities_data[full_activity]
+        max_participants = activity["max_participants"]
+        current_participants = len(activity["participants"])
+
+        # Fill up the activity
+        for i in range(max_participants - current_participants):
+            response = client.post(
+                f"/activities/{full_activity}/signup",
+                params={"email": f"filler{i}@mergington.edu"}
+            )
+            assert response.status_code == 200
+
+        # Try to signup when full
+        response = client.post(
+            f"/activities/{full_activity}/signup",
+            params={"email": "overflow@mergington.edu"}
+        )
+        assert response.status_code == 409
+
+        data = response.json()
+        assert "detail" in data
+        assert "full" in data["detail"].lower()
+
 
 class TestUnregister:
     def test_unregister_success(self, client, reset_activities):
