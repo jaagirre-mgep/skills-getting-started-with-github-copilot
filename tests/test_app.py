@@ -2,6 +2,7 @@
 Tests for the Mergington High School Activities API
 """
 
+import copy
 import pytest
 from fastapi.testclient import TestClient
 from src.app import app, activities
@@ -15,23 +16,15 @@ def client():
 
 @pytest.fixture
 def reset_activities():
-    """Reset activities to initial state before each test"""
-    # Save original state
-    original_activities = {
-        name: {
-            "description": details["description"],
-            "schedule": details["schedule"],
-            "max_participants": details["max_participants"],
-            "participants": details["participants"].copy()
-        }
-        for name, details in activities.items()
-    }
+    """Reset activities to initial state before and after each test"""
+    # Save a deep copy of the original state
+    original_activities = copy.deepcopy(activities)
 
     yield
 
-    # Restore original state after test
-    for name in list(activities.keys()):
-        activities[name]["participants"] = original_activities[name]["participants"].copy()
+    # Restore the entire activities dict to its original state
+    activities.clear()
+    activities.update(copy.deepcopy(original_activities))
 
 
 class TestRoot:
